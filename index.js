@@ -1,6 +1,10 @@
+const { json } = require("body-parser");
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const app = express();
 const PORT = 3000;
+
+app.use(express.json());
 
 let USERS_ID = 1;
 let ORGANIZATIONS_ID = 1;
@@ -43,14 +47,15 @@ app.get("/ping", (req, res) => {
 })
 
 // CREATE ENDPOINTS
-app.post("/singup", (req, res) => {
+app.post("/signup", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
     const userExists = USERS.find(u => u.username === username);
     if (userExists) {
-        res.status("User with this email already exists");
-        return
+        return res.status(409).json({
+            message: "User with this username already exists"
+        });
     }
 
     USERS.push({
@@ -59,13 +64,31 @@ app.post("/singup", (req, res) => {
         id: USERS_ID++
     });
 
-    res.status(200, {
+    return res.status(200).json({
         message: "Singup successfully"
     });
 
 });
 
-app.post("/singin", (req, res) => {
+app.post("/signin", (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    const userExists = USERS.find(u => u.username === username && u.password === password);
+    if (!userExists) {
+        return res.status(403).json({
+            message: "Invalid Credentials"
+        })
+    }
+
+    const token = jwt.sign({
+        userId: userExists.id
+    }, "supersecret")
+
+    res.json({
+        tokens: token
+    })
+
 
 });
 
